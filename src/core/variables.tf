@@ -872,7 +872,8 @@ variable "spa" {
   default = [
     "auth",
     "onboarding",
-    "dashboard"
+    "dashboard",
+    "onboarding-pnpg"
   ]
 }
 # contracts storage
