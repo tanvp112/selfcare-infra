@@ -111,6 +111,8 @@ resource "azurerm_management_lock" "mongodb_selc_user_group" {
   notes      = "This items can't be deleted in this subscription!"
 }
 
+
+
 #tfsec:ignore:AZU023
 resource "azurerm_key_vault_secret" "cosmosdb_account_mongodb_connection_strings" {
   name         = "mongodb-connection-string"
@@ -171,6 +173,88 @@ module "mongdb_collection_user-groups" {
     {
       keys   = ["members"]
       unique = false
+    }
+  ]
+
+  lock_enable = true
+}
+
+resource "azurerm_cosmosdb_mongo_database" "selc_ms_core" {
+  name                = "selcMsCore"
+  resource_group_name = azurerm_resource_group.mongodb_rg.name
+  account_name        = module.cosmosdb_account_mongodb.name
+
+  throughput = var.cosmosdb_mongodb_enable_autoscaling || local.cosmosdb_mongodb_enable_serverless ? null : var.cosmosdb_mongodb_throughput
+
+  dynamic "autoscale_settings" {
+    for_each = var.cosmosdb_mongodb_enable_autoscaling && !local.cosmosdb_mongodb_enable_serverless ? [""] : []
+    content {
+      max_throughput = var.cosmosdb_mongodb_max_throughput
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      autoscale_settings
+    ]
+  }
+}
+
+resource "azurerm_management_lock" "mongodb_selc_ms_core" {
+  name       = "mongodb-selc-ms-core-lock"
+  scope      = azurerm_cosmosdb_mongo_database.selc_ms_core.id
+  lock_level = "CanNotDelete"
+  notes      = "This items can't be deleted in this subscription!"
+}
+
+module "mongdb_collection_institution" {
+  source = "git::https://github.com/pagopa/azurerm.git//cosmosdb_mongodb_collection?ref=v3.3.0"
+
+  name                = "Institution"
+  resource_group_name = azurerm_resource_group.mongodb_rg.name
+
+  cosmosdb_mongo_account_name  = module.cosmosdb_account_mongodb.name
+  cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_ms_core.name
+
+  indexes = [{
+    keys   = ["_id"]
+    unique = true
+    }
+  ]
+
+  lock_enable = true
+}
+
+module "mongdb_collection_token" {
+  source = "git::https://github.com/pagopa/azurerm.git//cosmosdb_mongodb_collection?ref=v3.3.0"
+
+  name                = "Token"
+  resource_group_name = azurerm_resource_group.mongodb_rg.name
+
+  cosmosdb_mongo_account_name  = module.cosmosdb_account_mongodb.name
+  cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_ms_core.name
+
+  indexes = [{
+    keys   = ["_id"]
+    unique = true
+    }
+  ]
+
+  lock_enable = true
+}
+
+module "mongdb_collection_token" {
+  source = "git::https://github.com/pagopa/azurerm.git//cosmosdb_mongodb_collection?ref=v3.3.0"
+
+  name                = "User"
+  resource_group_name = azurerm_resource_group.mongodb_rg.name
+
+  cosmosdb_mongo_account_name  = module.cosmosdb_account_mongodb.name
+  cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_ms_core.name
+
+  indexes = [{
+    keys   = ["_id"]
+    unique = true
     }
   ]
 
