@@ -5,7 +5,7 @@ resource "azurerm_resource_group" "mongodb_rg" {
   tags = var.tags
 }
 
-locals {
+locals { 
   base_capabilities = [
     "EnableMongo"
   ]
@@ -77,6 +77,13 @@ resource "azurerm_cosmosdb_mongo_database" "selc_product" {
   }
 }
 
+resource "azurerm_management_lock" "mongodb_selc_product" {
+  name       = "mongodb-selc-product-lock"
+  scope      = azurerm_cosmosdb_mongo_database.selc_product.id
+  lock_level = "CanNotDelete"
+  notes      = "This items can't be deleted in this subscription!"
+}
+
 resource "azurerm_cosmosdb_mongo_database" "selc_user_group" {
   name                = "selcUserGroup"
   resource_group_name = azurerm_resource_group.mongodb_rg.name
@@ -96,6 +103,13 @@ resource "azurerm_cosmosdb_mongo_database" "selc_user_group" {
       autoscale_settings
     ]
   }
+}
+
+resource "azurerm_management_lock" "mongodb_selc_user_group" {
+  name       = "mongodb-selc-user-group-lock"
+  scope      = azurerm_cosmosdb_mongo_database.selc_user_group.id
+  lock_level = "CanNotDelete"
+  notes      = "This items can't be deleted in this subscription!"
 }
 
 # Collections
@@ -151,6 +165,125 @@ module "mongdb_collection_user-groups" {
     }
   ]
 
+}
+
+resource "azurerm_cosmosdb_mongo_database" "selc_ms_core" {
+  name                = "selcMsCore"
+  resource_group_name = azurerm_resource_group.mongodb_rg.name
+  account_name        = module.cosmosdb_account_mongodb.name
+
+  throughput = var.cosmosdb_mongodb_enable_autoscaling || local.cosmosdb_mongodb_enable_serverless ? null : var.cosmosdb_mongodb_throughput
+
+  dynamic "autoscale_settings" {
+    for_each = var.cosmosdb_mongodb_enable_autoscaling && !local.cosmosdb_mongodb_enable_serverless ? [""] : []
+    content {
+      max_throughput = var.cosmosdb_mongodb_max_throughput
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      autoscale_settings
+    ]
+  }
+}
+
+resource "azurerm_management_lock" "mongodb_selc_ms_core" {
+  name       = "mongodb-selc-ms-core-lock"
+  scope      = azurerm_cosmosdb_mongo_database.selc_ms_core.id
+  lock_level = "CanNotDelete"
+  notes      = "This items can't be deleted in this subscription!"
+}
+
+locals {
+  mongo = {
+    selcMsCore = {
+      collections = [
+        {
+          name = "Institution"
+          indexes = [{
+            keys   = ["_id"]
+            unique = true
+            },
+            {
+              keys   = ["externalId"]
+              unique = true
+            },
+            {
+              keys   = ["geographicTaxonomies.code"]
+              unique = false
+            },
+            {
+              keys   = ["onboarding.productId"]
+              unique = false
+            }
+          ]
+        },
+
+        {
+          name = "User"
+          indexes = [{
+            keys   = ["_id"]
+            unique = true
+            },
+            {
+              keys   = ["bindings.institutionId"]
+              unique = false
+            },
+            {
+              keys   = ["bindings.products.productId"]
+              unique = false
+            },
+            {
+              keys   = ["bindings.products.relationshipId"]
+              unique = false
+            }
+          ]
+        },
+
+        {
+          name = "Token"
+          indexes = [{
+            keys   = ["_id"]
+            unique = true
+            },
+            {
+              keys   = ["institutionId"]
+              unique = false
+            },
+            {
+              keys   = ["productId"]
+              unique = false
+            }
+          ]
+        },
+      ]
+    }
+  }
+}
+
+module "selc_ms_core_collections" {
+  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_account?ref=v5.3.0"
+
+  for_each = {
+    for index, coll in local.mongo.selcMsCore.collections :
+    coll.name => coll
+  }
+
+  name                = each.value.name
+  resource_group_name = azurerm_resource_group.mongodb_rg.name
+  domain = var.domain
+  # cosmosdb_mongo_account_name  = module.cosmosdb_account_mongodb.name
+  # cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_ms_core.name
+  location             = azurerm_resource_group.mongodb_rg.location
+  main_geo_location_location       = azurerm_resource_group.mongodb_rg.location
+  main_geo_location_zone_redundant = var.cosmosdb_mongodb_main_geo_location_zone_redundant
+
+  kind                 = "MongoDB"
+  # indexes = each.value.indexes
+  tags = var.tags
+
+  lock_enable = true
 }
 
 #
