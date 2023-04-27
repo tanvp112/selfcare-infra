@@ -121,3 +121,7 @@ aruba_sign_service = {
 geo-taxonomies = {
   GEO_TAXONOMIES_URL = "https://api-pnpg.selfcare.pagopa.it/external"
 }
+
+# CosmosDb MongoDb
+cosmosdb_mongodb_extra_capabilities               = ["EnableServerless"]
+cosmosdb_mongodb_main_geo_location_zone_redundant = false

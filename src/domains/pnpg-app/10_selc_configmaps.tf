@@ -226,9 +226,9 @@ resource "kubernetes_config_map" "infocamere-service" {
   }
 
   data = {
-    INFO_CAMERE_URL                            = "https://icapiscl.infocamere.it/ic/ce/wspa/wspa/rest/"
-    INFO_CAMERE_AUTHENTICATION_ENDPOINT        = "authentication"
-    INFO_CAMERE_INSTITUTIONS_BY_LEGAL_ENDPOINT = "listaLegaleRappresentante/{taxId}"
+    INFO_CAMERE_URL                            = "https://icapiscl.infocamere.it"
+    INFO_CAMERE_AUTHENTICATION_ENDPOINT        = "/ic/ce/wspa/wspa/rest/authentication"
+    INFO_CAMERE_INSTITUTIONS_BY_LEGAL_ENDPOINT = "/ic/ce/wspa/wspa/rest/listaLegaleRappresentante/{taxId}"
   }
 }
 
