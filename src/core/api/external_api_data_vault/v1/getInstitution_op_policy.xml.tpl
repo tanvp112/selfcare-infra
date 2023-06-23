@@ -10,12 +10,7 @@
 
                 // 2) Construct the Base64Url-encoded payload
                 var exp = new DateTimeOffset(DateTime.Now.AddMinutes(30)).ToUnixTimeSeconds();  // sets the expiration of the token to be 30 seconds from now
-                var uid = "party";
-
-                if(uid == "") {
-                  return "";
-                }
-
+                var uid = "pnpg";
                 var aud = "${API_DOMAIN}";
                 var iss = "SPID";
                 var payload = new { exp, uid, aud, iss };
@@ -34,8 +29,9 @@
 
                 }"/>
         <set-header exists-action="override" name="Authorization">
-            <value>@((string)context.Variables["jwt"])</value>
+                  <value>@((string)context.Variables["jwt"])</value>
         </set-header>
+        <set-backend-service base-url="${PARTY_PROCESS_BACKEND_BASE_URL}" />
     </inbound>
     <backend>
         <base/>

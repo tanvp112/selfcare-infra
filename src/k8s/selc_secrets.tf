@@ -94,12 +94,14 @@ resource "kubernetes_secret" "mail" {
   }
 
   data = merge({
-    SMTP_HOST           = "smtps.pec.aruba.it"
-    SMTP_PORT           = 465
-    SMTP_SSL            = true
-    SMTP_USR            = module.key_vault_secrets_query.values["smtp-usr"].value
-    SMTP_PSW            = module.key_vault_secrets_query.values["smtp-psw"].value
-    MAIL_SENDER_ADDRESS = module.key_vault_secrets_query.values["smtp-usr"].value
+    SMTP_HOST                 = "smtps.pec.aruba.it"
+    SMTP_PORT                 = 465
+    SMTP_SSL                  = true
+    SMTP_USR                  = module.key_vault_secrets_query.values["smtp-usr"].value
+    SMTP_PSW                  = module.key_vault_secrets_query.values["smtp-psw"].value
+    MAIL_SENDER_ADDRESS       = module.key_vault_secrets_query.values["smtp-usr"].value
+    AWS_SES_ACCESS_KEY_ID     = module.key_vault_secrets_query.values["aws-ses-access-key-id"].value
+    AWS_SES_SECRET_ACCESS_KEY = module.key_vault_secrets_query.values["aws-ses-secret-access-key"].value
     },
     var.env_short != "p"
     ? {
@@ -184,8 +186,10 @@ resource "kubernetes_secret" "product-external-api" {
   }
 
   data = {
-    EXTERNAL_API_KEY  = module.key_vault_secrets_query.values["external-api-key"].value
-    EXTERNAL_API_USER = module.key_vault_secrets_query.values["external-user-api"].value
+    STORAGE_CONTAINER        = local.contracts_storage_container
+    BLOB_STORAGE_CONN_STRING = module.key_vault_secrets_query.values["contracts-storage-connection-string"].value
+    EXTERNAL_API_KEY         = module.key_vault_secrets_query.values["external-api-key"].value
+    EXTERNAL_API_USER        = module.key_vault_secrets_query.values["external-user-api"].value
   }
 
   type = "Opaque"
@@ -285,6 +289,25 @@ resource "kubernetes_secret" "onboarding-interceptor-event-secrets" {
   type = "Opaque"
 }
 
+resource "kubernetes_secret" "external-interceptor-event-secrets" {
+  metadata {
+    name      = "external-interceptor-event-secrets"
+    namespace = kubernetes_namespace.selc.metadata[0].name
+  }
+
+  data = {
+    KAFKA_BROKER            = "${local.project}-eventhub-ns.servicebus.windows.net:9093"
+    KAFKA_SECURITY_PROTOCOL = "SASL_SSL"
+    KAFKA_SASL_MECHANISM    = "PLAIN"
+
+    KAFKA_CONTRACTS_TOPIC                        = "SC-Contracts"
+    KAFKA_FD_TOPIC                               = "Selfcare-FD"
+    KAFKA_CONTRACTS_SELFCARE_RO_SASL_JAAS_CONFIG = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$ConnectionString\" password=\"${module.key_vault_secrets_query.values["eventhub-SC-Contracts-interceptor-connection-string"].value}\";"
+    KAFKA_SELFCARE_FD_WO_SASL_JAAS_CONFIG        = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$ConnectionString\" password=\"${module.key_vault_secrets_query.values["eventhub-Selfcare-FD-external-interceptor-wo-connection-string"].value}\";"
+  }
+
+}
+
 resource "kubernetes_secret" "onboarding-interceptor-apim-internal" {
   metadata {
     name      = "onboarding-interceptor-apim-internal"
@@ -293,6 +316,19 @@ resource "kubernetes_secret" "onboarding-interceptor-apim-internal" {
 
   data = {
     SELFCARE_APIM_INTERNAL_API_KEY = module.key_vault_secrets_query.values["onboarding-interceptor-apim-internal"].value
+  }
+
+  type = "Opaque"
+}
+
+resource "kubernetes_secret" "external-interceptor-apim-internal" {
+  metadata {
+    name      = "external-interceptor-apim-internal"
+    namespace = kubernetes_namespace.selc.metadata[0].name
+  }
+
+  data = {
+    SELFCARE_APIM_INTERNAL_API_KEY = module.key_vault_secrets_query.values["external-interceptor-apim-internal"].value
   }
 
   type = "Opaque"

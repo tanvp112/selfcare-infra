@@ -24,6 +24,11 @@ data "azurerm_virtual_network" "vnet_aks" {
   resource_group_name = data.azurerm_resource_group.vnet_aks_rg.name
 }
 
+data "azurerm_kubernetes_cluster" "aks" {
+  name                = local.aks_cluster_name
+  resource_group_name = azurerm_resource_group.rg_aks.name
+}
+
 #
 # Public ip
 #

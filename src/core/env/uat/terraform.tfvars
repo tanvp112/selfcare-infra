@@ -241,6 +241,62 @@ eventhub_ip_rules = [
   { // PN TEST
     ip_mask = "18.102.31.101",
     action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "18.197.134.65",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "52.29.190.137",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "3.67.255.232",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "3.67.182.154",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "3.68.44.236",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "3.66.249.150",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "18.198.196.89",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "18.193.21.232",
+    action  = "Allow"
+  },
+  { // SAP
+    ip_mask = "3.65.9.91",
+    action  = "Allow"
+  },
+  { //PROD-FD
+    ip_mask = "91.218.226.5/32",
+    action  = "Allow"
+  },
+  { //PROD-FD
+    ip_mask = "91.218.226.15/32",
+    action  = "Allow"
+  },
+  { //PROD-FD
+    ip_mask = "91.218.224.5/32",
+    action  = "Allow"
+  },
+  { //PROD-FD
+    ip_mask = "91.218.224.15/32",
+    action  = "Allow"
+  },
+  { //PROD-FD
+    ip_mask = "2.228.86.218/32",
+    action  = "Allow"
   }
 ]
 
@@ -285,9 +341,35 @@ eventhubs = [{
       listen = true
       send   = false
       manage = false
+    },
+    {
+      name   = "external-interceptor"
+      listen = true
+      send   = false
+      manage = false
+    }
+  ]
+  }, {
+  name              = "Selfcare-FD"
+  partitions        = 5
+  message_retention = 7
+  consumers         = []
+  keys = [
+    {
+      name   = "external-interceptor-wo"
+      listen = false
+      send   = true
+      manage = false
+    },
+    {
+      name   = "fd"
+      listen = true
+      send   = false
+      manage = false
     }
   ]
 }]
 ##
 
 enable_load_tests_db = true
+

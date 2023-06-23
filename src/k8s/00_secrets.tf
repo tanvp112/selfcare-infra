@@ -6,6 +6,8 @@ module "key_vault_secrets_query" {
 
   secrets = [
     "appinsights-instrumentation-key",
+    "aws-ses-access-key-id",
+    "aws-ses-secret-access-key",
     "redis-primary-access-key",
     "jwt-private-key",
     "jwt-public-key",
@@ -23,6 +25,7 @@ module "key_vault_secrets_query" {
     "smtp-not-pec-psw",
     "contracts-storage-access-key",
     "web-storage-connection-string",
+    "contracts-storage-connection-string",
     "user-registry-api-key",
     "party-test-institution-email",
     "portal-admin-operator-email",
@@ -31,6 +34,7 @@ module "key_vault_secrets_query" {
     "jwt-secret",
     "eventhub-SC-Contracts-selfcare-wo-connection-string",
     "eventhub-SC-Contracts-interceptor-connection-string",
+    "eventhub-Selfcare-FD-external-interceptor-wo-connection-string",
     "external-api-key",
     "external-user-api",
     "user-registry-api-key",
@@ -44,6 +48,7 @@ module "key_vault_secrets_query" {
     "infocamere-secret-private-key",
     "infocamere-secret-certificate",
     "onboarding-interceptor-apim-internal",
+    "external-interceptor-apim-internal",
     "national-registry-api-key",
     "geotaxonomy-api-key"
   ]
