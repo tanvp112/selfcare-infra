@@ -22,7 +22,7 @@ locals {
 
   api_domain = format("api.%s.%s", var.dns_zone_prefix, var.external_domain)
 
-  apim_base_url = format("%s/external", azurerm_api_management_custom_domain.api_custom_domain.gateway[0].host_name)
+  apim_base_url = "${azurerm_api_management_custom_domain.api_custom_domain.gateway[0].host_name}/external"
 }
 
 resource "azurerm_api_management_custom_domain" "api_custom_domain" {
@@ -698,7 +698,7 @@ resource "azurerm_api_management_api_version_set" "apim_selfcare_support_service
 }
 
 module "apim_selfcare_support_service_v1" {
-  source              = "git::https://github.com/pagopa/azurerm.git//api_management_api?ref=v2.12.5"
+  source              = "git::https://github.com/pagopa/terraform-azurerm-v3.git//api_management_api?ref=v6.20.0"
   name                = format("%s-selfcare-support-api-service", local.project)
   api_management_name = module.apim.name
   resource_group_name = azurerm_resource_group.rg_api.name
@@ -716,7 +716,7 @@ module "apim_selfcare_support_service_v1" {
 
   content_format = "openapi"
   content_value = templatefile("./api/selfcare_support_service/v1/open-api.yml.tpl", {
-    host     = azurerm_api_management_custom_domain.api_custom_domain.proxy[0].host_name
+    host     = azurerm_api_management_custom_domain.api_custom_domain.gateway[0].host_name
     basePath = "v1"
   })
 
@@ -1000,7 +1000,7 @@ module "apim_product_io" {
 }
 
 module "apim_product_test_io" {
-  source = "git::https://github.com/pagopa/azurerm.git//api_management_product?ref=v1.0.16"
+  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//api_management_product?ref=v6.20.0"
 
   product_id   = "test-io"
   display_name = "Test IO"
@@ -1017,7 +1017,7 @@ module "apim_product_test_io" {
 }
 
 module "apim_product_test_io_premium" {
-  source = "git::https://github.com/pagopa/azurerm.git//api_management_product?ref=v1.0.16"
+  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//api_management_product?ref=v6.20.0"
 
   product_id   = "test-io-premium"
   display_name = "Test IO Premium"
@@ -1034,7 +1034,7 @@ module "apim_product_test_io_premium" {
 }
 
 module "apim_product_support_io" {
-  source = "git::https://github.com/pagopa/azurerm.git//api_management_product?ref=v1.0.16"
+  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//api_management_product?ref=v6.20.0"
 
   product_id   = "prod-io"
   display_name = "Support IO"
@@ -1082,7 +1082,7 @@ resource "azurerm_api_management_api_version_set" "apim_external_api_data_vault"
 }
 
 module "apim_external_api_data_vault_v1" {
-  source              = "git::https://github.com/pagopa/azurerm.git//api_management_api?ref=v2.12.5"
+  source              = "git::https://github.com/pagopa/terraform-azurerm-v3.git//api_management_api?ref=v6.20.0"
   name                = "${local.project}-external-api-selc"
   api_management_name = module.apim.name
   resource_group_name = azurerm_resource_group.rg_api.name
