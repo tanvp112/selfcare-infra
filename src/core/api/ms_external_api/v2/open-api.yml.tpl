@@ -378,7 +378,7 @@ paths:
       security: [ { } ]
       tags:
         - institutions
-      summary: Gets the corresponding institution using internal institution id
+      summary: getInstitutionById
       description: Gets institution using internal institution id
       operationId: getInstitution
       parameters:
