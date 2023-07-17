@@ -54,7 +54,7 @@ tls_cert_check_helm = {
 api_gateway_url = "https://api-pnpg.selfcare.pagopa.it"
 # cdn_frontend_url = "https://selfcare.pagopa.it"
 # cdn_storage_url  = "https://selcdcheckoutsa.z6.web.core.windows.net"
-spid_testenv_url = "https://selc-p-pnpg-spid-testenv.westeurope.azurecontainer.io"
+# spid_testenv_url = "https://selc-p-pnpg-spid-testenv.westeurope.azurecontainer.io"
 
 # uservice versions
 api-version_uservice-party-management     = "0.1"
@@ -77,6 +77,10 @@ configmaps_interop-be-party-process = {
   SELFCARE_ADMIN_NOTIFICATION_URL : "https://selfcare.pagopa.it/dashboard/admin/onboarding/"
   GEO_TAXONOMY_URL : "https://api.pdnd.pagopa.it/geo-tax"
   MAIL_ONBOARDING_URL : "https://selfcare.pagopa.it/onboarding/"
+}
+
+configmaps_national_registries = {
+  NATIONAL_REGISTRIES_URL = "https://api-selcpg.notifichedigitali.it/national-registries-private"
 }
 
 configmaps_ms_core = {
@@ -102,7 +106,7 @@ configmaps_hub-spid-login-ms = {
   # SPID
   ORG_ISSUER = "https://imprese.notifichedigitali.it"
 
-  CIE_URL          = "https://preproduzione.idserver.servizicie.interno.gov.it/idp/shibboleth?Metadata"
+  CIE_URL          = "https://api.is.eng.pagopa.it/idp-keys/cie/latest"
   SERVER_PORT      = "8080"
   IDP_METADATA_URL = "https://api.is.eng.pagopa.it/idp-keys/spid/latest"
 }

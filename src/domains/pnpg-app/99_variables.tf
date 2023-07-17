@@ -50,6 +50,10 @@ locals {
   cdn_rg_name     = "${local.project}-checkout-fe-rg"
   cdn_fqdn_url    = "https://${module.key_vault_secrets_query.values["cdn-fqdn"].value}"
   cdn_storage_url = "https://${module.key_vault_secrets_query.values["cdn-storage-blob-primary-web-host"].value}"
+
+
+  # Monitor
+  alert_pnpg_error_5xx_name = "pnpg-error-5xx"
 }
 
 variable "prefix" {
@@ -221,6 +225,10 @@ variable "reverse_proxy_rtd" {
 # ConfigMaps & Secrets
 #
 variable "configmaps_interop-be-party-process" {
+  type = map(string)
+}
+
+variable "configmaps_national_registries" {
   type = map(string)
 }
 

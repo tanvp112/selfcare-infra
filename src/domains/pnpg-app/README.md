@@ -38,6 +38,8 @@
 | [azurerm_key_vault_secret.azure_devops_aks_apiserver_url](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) | resource |
 | [azurerm_key_vault_secret.azure_devops_sa_cacrt](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) | resource |
 | [azurerm_key_vault_secret.azure_devops_sa_token](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) | resource |
+| [azurerm_monitor_action_group.http_status](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_action_group) | resource |
+| [azurerm_monitor_metric_alert.pnpg_error_5xx](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_metric_alert) | resource |
 | [azurerm_private_dns_a_record.ingress](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_a_record) | resource |
 | [helm_release.reloader](https://registry.terraform.io/providers/hashicorp/helm/2.8.0/docs/resources/release) | resource |
 | [kubernetes_config_map.aruba-sign-service](https://registry.terraform.io/providers/hashicorp/kubernetes/2.18.1/docs/resources/config_map) | resource |
@@ -116,6 +118,7 @@
 | <a name="input_configmaps_hub-spid-login-ms"></a> [configmaps\_hub-spid-login-ms](#input\_configmaps\_hub-spid-login-ms) | n/a | `map(string)` | n/a | yes |
 | <a name="input_configmaps_interop-be-party-process"></a> [configmaps\_interop-be-party-process](#input\_configmaps\_interop-be-party-process) | ConfigMaps & Secrets | `map(string)` | n/a | yes |
 | <a name="input_configmaps_ms_core"></a> [configmaps\_ms\_core](#input\_configmaps\_ms\_core) | n/a | `map(string)` | n/a | yes |
+| <a name="input_configmaps_national_registries"></a> [configmaps\_national\_registries](#input\_configmaps\_national\_registries) | n/a | `map(string)` | n/a | yes |
 | <a name="input_default_service_port"></a> [default\_service\_port](#input\_default\_service\_port) | n/a | `number` | `8080` | no |
 | <a name="input_dns_zone_internal_prefix"></a> [dns\_zone\_internal\_prefix](#input\_dns\_zone\_internal\_prefix) | The dns subdomain. | `string` | `null` | no |
 | <a name="input_dns_zone_prefix"></a> [dns\_zone\_prefix](#input\_dns\_zone\_prefix) | The dns subdomain. | `string` | `"selfcare"` | no |
