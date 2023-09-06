@@ -49,7 +49,7 @@ ddos_protection_plan = {
 # AKS Platform
 #
 aks_platform_env              = "prod01"
-vnet_aks_ddos_protection_plan = false
+vnet_aks_ddos_protection_plan = true
 cidr_aks_platform_vnet        = ["10.11.0.0/16"]
 
 # dns
@@ -92,7 +92,7 @@ aks_upgrade_settings_max_surge    = "33%"
 aks_sku_tier                      = "Paid"
 
 aks_system_node_pool_vm_size                      = "Standard_D4ds_v5"
-aks_system_node_pool_node_count_min               = 2
+aks_system_node_pool_node_count_min               = 3
 aks_system_node_pool_node_count_max               = 3
 aks_system_node_pool_only_critical_addons_enabled = false
 
@@ -259,6 +259,30 @@ eventhub_ip_rules = [
   { // PN
     ip_mask = "18.102.5.128",
     action  = "Allow"
+  },
+  { //PROD-INTEROP-TEST
+    ip_mask = "18.159.67.168",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-TEST
+    ip_mask = "3.78.75.174",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-TEST
+    ip_mask = "3.68.17.213",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "18.192.82.161",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "3.120.212.183",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "18.192.110.102",
+    action  = "Allow"
   }
 ]
 
@@ -306,6 +330,12 @@ eventhubs = [{
     },
     {
       name   = "external-interceptor"
+      listen = true
+      send   = false
+      manage = false
+    },
+    {
+      name   = "interop"
       listen = true
       send   = false
       manage = false

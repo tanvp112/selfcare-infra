@@ -238,6 +238,18 @@ eventhub_ip_rules = [
     ip_mask = "15.161.176.211",
     action  = "Allow"
   },
+  { // PN HOTFIX
+    ip_mask = "18.102.101.93",
+    action  = "Allow"
+  },
+  { // PN HOTFIX
+    ip_mask = "18.102.131.222",
+    action  = "Allow"
+  },
+  { // PN HOTFIX
+    ip_mask = "18.102.7.213",
+    action  = "Allow"
+  },
   { // PN TEST
     ip_mask = "18.102.31.101",
     action  = "Allow"
@@ -297,6 +309,18 @@ eventhub_ip_rules = [
   { //PROD-FD
     ip_mask = "2.228.86.218/32",
     action  = "Allow"
+  },
+  { //PROD-INTEROP-DEV
+    ip_mask = "18.196.36.91",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-DEV
+    ip_mask = "3.125.67.68",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-DEV
+    ip_mask = "3.74.178.135",
+    action  = "Allow"
   }
 ]
 
@@ -338,6 +362,12 @@ eventhubs = [{
     },
     {
       name   = "external-interceptor"
+      listen = true
+      send   = false
+      manage = false
+    },
+    {
+      name   = "interop"
       listen = true
       send   = false
       manage = false

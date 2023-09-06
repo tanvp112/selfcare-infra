@@ -9,6 +9,7 @@ module "key_vault_secrets_query" {
     "aws-ses-access-key-id",
     "aws-ses-secret-access-key",
     "redis-primary-access-key",
+    "apim-backend-access-token",
     "jwt-private-key",
     "jwt-public-key",
     "jwt-kid",
@@ -56,6 +57,11 @@ module "key_vault_secrets_query" {
     "eventhub-SC-Users-external-interceptor-connection-string",
     "eventhub-SC-Contracts-sap-external-interceptor-wo-connection-string",
     "eventhub-SC-Contracts-sap-sap-connection-string",
-    "pagopa-backoffice-api-key"
+    "pagopa-backoffice-api-key",
+    "zendesk-support-api-key",
+    "prod-fd-client-id",
+    "prod-fd-client-secret",
+    "prod-fd-grant-type"
+
   ]
 }

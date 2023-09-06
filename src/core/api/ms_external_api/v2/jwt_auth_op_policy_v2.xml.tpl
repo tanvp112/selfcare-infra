@@ -11,6 +11,7 @@
             // 2) Construct the Base64Url-encoded payload
             var exp = new DateTimeOffset(DateTime.Now.AddMinutes(30)).ToUnixTimeSeconds();  // sets the expiration of the token to be 30 seconds from now
             var uid = "m2m";
+
             var aud = "${API_DOMAIN}";
             var iss = "SPID";
             var payload = new { exp, uid, aud, iss };
@@ -28,38 +29,15 @@
             }
 
             }"/>
-        <choose>
-            <when condition="@(((string)context.Variables["productId"]).Contains("prod-fd"))">
-                <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized" require-expiration-time="false" require-scheme="Bearer" require-signed-tokens="true">
-                    <openid-config url="https://login.microsoftonline.com/${TENANT_ID}/.well-known/openid-configuration" />
-                    <required-claims>
-                        <claim name="aud" match="all">
-                            <value>${EXTERNAL-OAUTH2-ISSUER}</value>
-                        </claim>
-                    </required-claims>
-                </validate-jwt>
-            </when>
-        </choose>
-        <set-header name="Authorization" exists-action="override">
+        <set-header exists-action="override" name="Authorization">
             <value>@((string)context.Variables["jwt"])</value>
         </set-header>
-        <!-- TODO: remove previous elements after Party will accept k8s token -->
-        <set-backend-service base-url="${PARTY_PROCESS_BACKEND_BASE_URL}" />
     </inbound>
     <backend>
         <base/>
     </backend>
     <outbound>
         <base/>
-        <choose>
-            <when condition="@(context.Response.StatusCode == 200)">
-                <set-body>@{
-                    JObject response = context.Response.Body.As<JObject>();
-                    response.Add("logo", new JValue(new Uri("${CDN_STORAGE_URL}/institutions/" + response.GetValue("id") + "/logo.png")));
-                    return response.ToString();
-                    }</set-body>
-            </when>
-        </choose>
     </outbound>
     <on-error>
         <base/>

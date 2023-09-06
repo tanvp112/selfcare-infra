@@ -599,6 +599,14 @@ module "apim_external_api_ms_v2" {
       })
     },
     {
+      operation_id = "getUserInfoUsingPOST"
+      xml_content = templatefile("./api/ms_external_api/v2/jwt_auth_op_policy_v2.xml.tpl", {
+        API_DOMAIN                 = local.api_domain
+        KID                        = module.jwt.jwt_kid
+        JWT_CERTIFICATE_THUMBPRINT = azurerm_api_management_certificate.jwt_certificate.thumbprint
+      })
+    },
+    {
       operation_id = "getInstitution"
       xml_content = templatefile("./api/ms_external_api/v2/getInstitution_op_policy.xml.tpl", {
         CDN_STORAGE_URL                = "https://${module.checkout_cdn.storage_primary_web_host}"
@@ -655,6 +663,28 @@ module "apim_external_api_ms_v2" {
         JWT_CERTIFICATE_THUMBPRINT     = azurerm_api_management_certificate.jwt_certificate.thumbprint
         TENANT_ID                      = data.azurerm_client_config.current.tenant_id
         EXTERNAL-OAUTH2-ISSUER         = data.azurerm_key_vault_secret.external-oauth2-issuer.value
+      })
+    },
+    {
+      operation_id = "getOnboardingsInstitutionUsingGET"
+      xml_content = templatefile("./api/ms_external_api/v2/getOnboardingsInstitutionUsingGET_op_policy.xml.tpl", {
+        MS_CORE_BACKEND_BASE_URL   = "http://${var.reverse_proxy_ip}/ms-core/v1/"
+        API_DOMAIN                 = local.api_domain
+        KID                        = module.jwt.jwt_kid
+        JWT_CERTIFICATE_THUMBPRINT = azurerm_api_management_certificate.jwt_certificate.thumbprint
+        TENANT_ID                  = data.azurerm_client_config.current.tenant_id
+        EXTERNAL-OAUTH2-ISSUER     = data.azurerm_key_vault_secret.external-oauth2-issuer.value
+      })
+    },
+    {
+      operation_id = "getInstitutionsByTaxCodeUsingGET"
+      xml_content = templatefile("./api/ms_external_api/v2/getInstitutionsByTaxCodeUsingGET_op_policy.xml.tpl", {
+        MS_CORE_BACKEND_BASE_URL   = "http://${var.reverse_proxy_ip}/ms-core/v1/"
+        API_DOMAIN                 = local.api_domain
+        KID                        = module.jwt.jwt_kid
+        JWT_CERTIFICATE_THUMBPRINT = azurerm_api_management_certificate.jwt_certificate.thumbprint
+        TENANT_ID                  = data.azurerm_client_config.current.tenant_id
+        EXTERNAL-OAUTH2-ISSUER     = data.azurerm_key_vault_secret.external-oauth2-issuer.value
       })
     }
   ]
@@ -716,6 +746,10 @@ module "apim_internal_api_ms_v1" {
       xml_content  = file("./api/jwt_auth_op_policy.xml")
     },
     {
+      operation_id = "onboardingUsingPOST"
+      xml_content  = file("./api/jwt_auth_op_policy.xml")
+    },
+    {
       operation_id = "getProductUsingGET"
       xml_content = templatefile("./api/ms_internal_api/v1/getProduct_op_policy.xml.tpl", {
         MS_PRODUCT_BACKEND_BASE_URL = "http://${var.reverse_proxy_ip}/ms-product/v1/"
@@ -770,6 +804,15 @@ module "apim_selfcare_support_service_v1" {
         API_DOMAIN                 = local.api_domain
         KID                        = module.jwt.jwt_kid
         JWT_CERTIFICATE_THUMBPRINT = azurerm_api_management_certificate.jwt_certificate.thumbprint
+      })
+    },
+    {
+      operation_id = "sendSupportRequestUsingPOST"
+      xml_content = templatefile("./api/selfcare_support_service/v1/sendSupportRequest_op_policy.xml.tpl", {
+        API_DOMAIN                 = local.api_domain
+        KID                        = module.jwt.jwt_kid
+        JWT_CERTIFICATE_THUMBPRINT = azurerm_api_management_certificate.jwt_certificate.thumbprint
+        BACKEND_BASE_URL           = "http://${var.reverse_proxy_ip}/dashboard/v1/support"
       })
     }
   ]
@@ -1129,93 +1172,3 @@ data "azurerm_key_vault_secret" "external-oauth2-issuer" {
   name         = "external-oauth2-issuer"
   key_vault_id = module.key_vault.id
 }
-
-
-resource "azurerm_api_management_api_version_set" "apim_external_api_data_vault" {
-  name                = format("%s-external-api-data-vault", var.env_short)
-  resource_group_name = azurerm_resource_group.rg_api.name
-  api_management_name = module.apim.name
-  display_name        = "Data Vault for Selfcare"
-  versioning_scheme   = "Segment"
-}
-
-module "apim_external_api_data_vault_v1" {
-  source              = "git::https://github.com/pagopa/azurerm.git//api_management_api?ref=v2.12.5"
-  name                = "${local.project}-external-api-selc"
-  api_management_name = module.apim.name
-  resource_group_name = azurerm_resource_group.rg_api.name
-  version_set_id      = azurerm_api_management_api_version_set.apim_external_api_data_vault.id
-
-  description  = "Selfcare External API Data Vault"
-  display_name = "Selfcare External API Data Vault"
-  path         = "selfcare/external/data-vault"
-  api_version  = "v1"
-  protocols = [
-    "https"
-  ]
-
-  service_url = "http://${var.reverse_proxy_ip}/external-api/v1"
-
-  content_format = "openapi"
-  content_value = templatefile("./api/external_api_data_vault/v1/open-api.yml.tpl", {
-    host     = local.apim_base_url
-    basePath = "v1"
-  })
-
-  xml_content = file("./api/external_api_data_vault/v1/base_policy.xml")
-
-  subscription_required = true
-  product_ids = [
-    module.apim_product_interop.product_id,
-    module.apim_product_interop_coll.product_id,
-    module.apim_product_pn.product_id,
-    module.apim_product_pn_svil.product_id,
-    module.apim_product_pn_dev.product_id,
-    module.apim_product_pn_coll.product_id,
-    module.apim_product_pn_cert.product_id,
-    module.apim_product_pn_hotfix.product_id,
-    module.apim_product_pn_prod.product_id,
-    module.apim_product_pagopa.product_id,
-    module.apim_product_idpay.product_id,
-    module.apim_product_io_sign.product_id
-  ]
-
-
-  api_operation_policies = [
-    {
-      operation_id = "addInstitutionUsingPOST"
-      xml_content = templatefile("./api/external_api_data_vault/v1/getInstitution_op_policy.xml.tpl", {
-        CDN_STORAGE_URL                = "https://${module.checkout_cdn.storage_primary_web_host}"
-        PARTY_PROCESS_BACKEND_BASE_URL = "http://${var.reverse_proxy_ip}/ms-core/v1/"
-        API_DOMAIN                     = local.api_domain
-        KID                            = module.jwt.jwt_kid
-        JWT_CERTIFICATE_THUMBPRINT     = azurerm_api_management_certificate.jwt_certificate.thumbprint
-      })
-    },
-    {
-      operation_id = "getInstitution"
-      xml_content = templatefile("./api/external_api_data_vault/v1/getInstitution_op_policy.xml.tpl", {
-        CDN_STORAGE_URL                = "https://${module.checkout_cdn.storage_primary_web_host}"
-        PARTY_PROCESS_BACKEND_BASE_URL = "http://${var.reverse_proxy_ip}/ms-core/v1/"
-        API_DOMAIN                     = local.api_domain
-        KID                            = module.jwt.jwt_kid
-        JWT_CERTIFICATE_THUMBPRINT     = azurerm_api_management_certificate.jwt_certificate.thumbprint
-      })
-    }
-  ]
-
-  # oauth2_authorization = {
-  #   authorization_server_name = azurerm_api_management_oauth2_authorization_server.selfcare_fd
-  # }
-}
-
-# resource "azurerm_api_management_oauth2_authorization_server" "selfcare_fd" {
-#   name                = "${local.project}-selfcare-authorization-server"
-#   api_management_name = module.apim.name
-#   resource_group_name = azurerm_resource_group.rg_api.name
-
-#   authorization_endpoint = "https://${local.cdn_storage_hostname}/oauth2/authorize"
-#   token_endpoint         = "https://${local.cdn_storage_hostname}/oauth2/token"
-#   client_id              = "your-client-id"
-#   client_secret          = "your-client-secret"
-# }
