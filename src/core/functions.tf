@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "functions_rg" {
-  name = "${local.project}-${var.env_short}-functions-resource-group"
+  name     = "${local.project}-${var.env_short}-functions-resource-group"
   location = var.location
 
   tags = var.tags
@@ -29,10 +29,10 @@ module "onboarding_func" {
   # source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//function_app?ref=v6.2.1"
   source = "git::https://github.com/pagopa/azurerm.git//function_app?ref=v4.18.1"
 
-  name                                     = format("%s-func", local.project)
-  location                                 = azurerm_resource_group.functions_rg.location
-  resource_group_name                      = azurerm_resource_group.functions_rg.name
-  
+  name                = format("%s-func", local.project)
+  location            = azurerm_resource_group.functions_rg.location
+  resource_group_name = azurerm_resource_group.functions_rg.name
+
   always_on                                = var.function_always_on
   subnet_id                                = module.functions_snet[0].id
   application_insights_instrumentation_key = azurerm_application_insights.application_insights.instrumentation_key

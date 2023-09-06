@@ -332,8 +332,8 @@ module "mongdb_collection_onboardings" {
   cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_onboarding.name
 
   indexes = [{
-      keys   = ["_id"]
-      unique = true
+    keys   = ["_id"]
+    unique = true
     }
   ]
 
