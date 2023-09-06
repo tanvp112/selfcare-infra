@@ -497,6 +497,12 @@ variable "cidr_subnet_functions" {
   default     = null
 }
 
+variable "cidr_subnet_github_runners" {
+  type        = list(string)
+  description = "Address prefixes subnet functions"
+  default     = null
+}
+
 # Network
 variable "cidr_vnet" {
   type        = list(string)
