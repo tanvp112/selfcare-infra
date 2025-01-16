@@ -14,7 +14,7 @@ locals {
 
 # cosmosdb-Mongo subnet
 module "cosmosdb_mongodb_snet" {
-  source               = "git::https://github.com/pagopa/terraform-azurerm-v3.git//subnet?ref=v7.3.0"
+  source               = "github.com/pagopa/terraform-azurerm-v3.git//subnet?ref=v7.50.1"
   name                 = format("%s-cosmosb-mongodb-snet", local.project)
   resource_group_name  = azurerm_resource_group.rg_vnet.name
   virtual_network_name = module.vnet.name
@@ -26,22 +26,27 @@ module "cosmosdb_mongodb_snet" {
 
 ###???
 module "cosmosdb_account_mongodb" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_account?ref=v7.3.0"
+  source = "github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_account?ref=v7.50.1"
 
-  name                 = format("%s-cosmosdb-mongodb-account", local.project)
-  location             = azurerm_resource_group.mongodb_rg.location
-  domain               = var.external_domain
-  resource_group_name  = azurerm_resource_group.mongodb_rg.name
-  offer_type           = var.cosmosdb_mongodb_offer_type
-  kind                 = "MongoDB"
-  capabilities         = concat(["EnableMongo"], var.cosmosdb_mongodb_extra_capabilities)
-  mongo_server_version = "4.0"
+  name                = format("%s-cosmosdb-mongodb-account", local.project)
+  location            = azurerm_resource_group.mongodb_rg.location
+  domain              = var.external_domain
+  resource_group_name = azurerm_resource_group.mongodb_rg.name
+  offer_type          = var.cosmosdb_mongodb_offer_type
+  kind                = "MongoDB"
+  capabilities = concat([
+    "EnableMongo"
+  ], var.cosmosdb_mongodb_extra_capabilities)
+  mongo_server_version = "4.2"
 
-  public_network_access_enabled     = var.env_short == "p" ? false : var.cosmosdb_mongodb_public_network_access_enabled
-  private_endpoint_enabled          = var.cosmosdb_mongodb_private_endpoint_enabled
-  private_endpoint_mongo_name       = "${local.project}-cosmosdb-mongodb-account"
-  subnet_id                         = module.cosmosdb_mongodb_snet.id
-  private_dns_zone_mongo_ids        = var.cosmosdb_mongodb_private_endpoint_enabled ? [azurerm_private_dns_zone.privatelink_mongo_cosmos_azure_com.id] : []
+  public_network_access_enabled         = var.env_short == "p" ? false : var.cosmosdb_mongodb_public_network_access_enabled
+  private_endpoint_enabled              = var.cosmosdb_mongodb_private_endpoint_enabled
+  private_endpoint_mongo_name           = "${local.project}-cosmosdb-mongodb-account"
+  private_service_connection_mongo_name = "${local.project}-cosmosdb-mongodb-account-private-endpoint-mongo"
+  subnet_id                             = module.cosmosdb_mongodb_snet.id
+  private_dns_zone_mongo_ids = var.cosmosdb_mongodb_private_endpoint_enabled ? [
+    azurerm_private_dns_zone.privatelink_mongo_cosmos_azure_com.id
+  ] : []
   is_virtual_network_filter_enabled = true
 
   consistency_policy = var.cosmosdb_mongodb_consistency_policy
@@ -56,62 +61,6 @@ module "cosmosdb_account_mongodb" {
   tags = var.tags
 }
 
-resource "azurerm_cosmosdb_mongo_database" "selc_product" {
-  name                = "selcProduct"
-  resource_group_name = azurerm_resource_group.mongodb_rg.name
-  account_name        = module.cosmosdb_account_mongodb.name
-
-  throughput = var.cosmosdb_mongodb_enable_autoscaling || local.cosmosdb_mongodb_enable_serverless ? null : var.cosmosdb_mongodb_throughput
-
-  dynamic "autoscale_settings" {
-    for_each = var.cosmosdb_mongodb_enable_autoscaling && !local.cosmosdb_mongodb_enable_serverless ? [""] : []
-    content {
-      max_throughput = var.cosmosdb_mongodb_max_throughput
-    }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      autoscale_settings
-    ]
-  }
-}
-
-resource "azurerm_management_lock" "mongodb_selc_product" {
-  name       = "mongodb-selc-product-lock"
-  scope      = azurerm_cosmosdb_mongo_database.selc_product.id
-  lock_level = "CanNotDelete"
-  notes      = "This items can't be deleted in this subscription!"
-}
-
-resource "azurerm_cosmosdb_mongo_database" "selc_user_group" {
-  name                = "selcUserGroup"
-  resource_group_name = azurerm_resource_group.mongodb_rg.name
-  account_name        = module.cosmosdb_account_mongodb.name
-
-  throughput = var.cosmosdb_mongodb_enable_autoscaling || local.cosmosdb_mongodb_enable_serverless ? null : var.cosmosdb_mongodb_throughput
-
-  dynamic "autoscale_settings" {
-    for_each = var.cosmosdb_mongodb_enable_autoscaling && !local.cosmosdb_mongodb_enable_serverless ? [""] : []
-    content {
-      max_throughput = var.cosmosdb_mongodb_max_throughput
-    }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      autoscale_settings
-    ]
-  }
-}
-
-resource "azurerm_management_lock" "mongodb_selc_user_group" {
-  name       = "mongodb-selc-user-group-lock"
-  scope      = azurerm_cosmosdb_mongo_database.selc_user_group.id
-  lock_level = "CanNotDelete"
-  notes      = "This items can't be deleted in this subscription!"
-}
-
 #tfsec:ignore:AZU023
 resource "azurerm_key_vault_secret" "cosmosdb_account_mongodb_connection_strings" {
   name         = "mongodb-connection-string"
@@ -119,63 +68,6 @@ resource "azurerm_key_vault_secret" "cosmosdb_account_mongodb_connection_strings
   content_type = "text/plain"
 
   key_vault_id = module.key_vault.id
-}
-
-# Collections
-module "mongdb_collection_products" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_mongodb_collection?ref=v7.3.0"
-
-  name                = "products"
-  resource_group_name = azurerm_resource_group.mongodb_rg.name
-
-  cosmosdb_mongo_account_name  = module.cosmosdb_account_mongodb.name
-  cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_product.name
-
-  indexes = [{
-    keys   = ["_id"]
-    unique = true
-    },
-    {
-      keys   = ["parent"]
-      unique = false
-    }
-  ]
-
-  lock_enable = true
-}
-
-module "mongdb_collection_user-groups" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_mongodb_collection?ref=v7.3.0"
-
-  name                = "userGroups"
-  resource_group_name = azurerm_resource_group.mongodb_rg.name
-
-  cosmosdb_mongo_account_name  = module.cosmosdb_account_mongodb.name
-  cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_user_group.name
-
-  indexes = [{
-    keys   = ["_id"]
-    unique = true
-    },
-    {
-      keys   = ["institutionId", "productId", "name"]
-      unique = true
-    },
-    {
-      keys   = ["institutionId"]
-      unique = false
-    },
-    {
-      keys   = ["productId"]
-      unique = false
-    },
-    {
-      keys   = ["members"]
-      unique = false
-    }
-  ]
-
-  lock_enable = true
 }
 
 # selcMsCore
@@ -187,7 +79,9 @@ resource "azurerm_cosmosdb_mongo_database" "selc_ms_core" {
   throughput = var.cosmosdb_mongodb_enable_autoscaling || local.cosmosdb_mongodb_enable_serverless ? null : var.cosmosdb_mongodb_throughput
 
   dynamic "autoscale_settings" {
-    for_each = var.cosmosdb_mongodb_enable_autoscaling && !local.cosmosdb_mongodb_enable_serverless ? [""] : []
+    for_each = var.cosmosdb_mongodb_enable_autoscaling && !local.cosmosdb_mongodb_enable_serverless ? [
+      ""
+    ] : []
     content {
       max_throughput = var.cosmosdb_mongodb_max_throughput
     }
@@ -213,9 +107,10 @@ locals {
       collections = [
         {
           name = "Institution"
-          indexes = [{
-            keys   = ["_id"]
-            unique = true
+          indexes = [
+            {
+              keys   = ["_id"]
+              unique = true
             },
             {
               keys   = ["externalId"]
@@ -228,43 +123,34 @@ locals {
             {
               keys   = ["onboarding.productId"]
               unique = false
-            }
-          ]
-        },
-
-        {
-          name = "User"
-          indexes = [{
-            keys   = ["_id"]
-            unique = true
             },
             {
-              keys   = ["bindings.institutionId"]
-              unique = false
-            },
-            {
-              keys   = ["bindings.products.productId"]
-              unique = false
-            },
-            {
-              keys   = ["bindings.products.relationshipId"]
+              keys   = ["taxCode"]
               unique = false
             }
           ]
         },
-
         {
-          name = "Token"
-          indexes = [{
-            keys   = ["_id"]
-            unique = true
+          name = "Delegations"
+          indexes = [
+            {
+              keys   = ["_id"]
+              unique = true
             },
             {
-              keys   = ["institutionId"]
+              keys   = ["institutionFromName"]
               unique = false
             },
             {
-              keys   = ["productId"]
+              keys   = ["from"]
+              unique = false
+            },
+            {
+              keys   = ["to"]
+              unique = false
+            },
+            {
+              keys   = ["toTaxCode"]
               unique = false
             }
           ]
@@ -275,7 +161,7 @@ locals {
 }
 
 module "selc_ms_core_collections" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_mongodb_collection?ref=v7.3.0"
+  source = "github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_mongodb_collection?ref=v7.50.1"
 
   for_each = {
     for index, coll in local.mongo.selcMsCore.collections :
@@ -289,54 +175,6 @@ module "selc_ms_core_collections" {
   cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_ms_core.name
 
   indexes = each.value.indexes
-
-  lock_enable = true
-}
-
-# Onboarding
-
-resource "azurerm_cosmosdb_mongo_database" "selc_onboarding" {
-  name                = "selcOnboarding"
-  resource_group_name = azurerm_resource_group.mongodb_rg.name
-  account_name        = module.cosmosdb_account_mongodb.name
-
-  throughput = var.cosmosdb_mongodb_enable_autoscaling || local.cosmosdb_mongodb_enable_serverless ? null : var.cosmosdb_mongodb_throughput
-
-  dynamic "autoscale_settings" {
-    for_each = var.cosmosdb_mongodb_enable_autoscaling && !local.cosmosdb_mongodb_enable_serverless ? [""] : []
-    content {
-      max_throughput = var.cosmosdb_mongodb_max_throughput
-    }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      autoscale_settings
-    ]
-  }
-}
-
-resource "azurerm_management_lock" "mongodb_selc_onboarding" {
-  name       = "mongodb-selc-onboarding-lock"
-  scope      = azurerm_cosmosdb_mongo_database.selc_onboarding.id
-  lock_level = "CanNotDelete"
-  notes      = "This items can't be deleted in this subscription!"
-}
-
-module "mongdb_collection_onboardings" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//cosmosdb_mongodb_collection?ref=v7.3.0"
-
-  name                = "onboardings"
-  resource_group_name = azurerm_resource_group.mongodb_rg.name
-
-  cosmosdb_mongo_account_name  = module.cosmosdb_account_mongodb.name
-  cosmosdb_mongo_database_name = azurerm_cosmosdb_mongo_database.selc_onboarding.name
-
-  indexes = [{
-    keys   = ["_id"]
-    unique = true
-    }
-  ]
 
   lock_enable = true
 }

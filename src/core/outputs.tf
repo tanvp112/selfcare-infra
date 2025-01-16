@@ -25,20 +25,13 @@ output "redis_ssl_port" {
 }
 
 ## AKS
-output "aks_cluster_name" {
-  value = module.aks.name
-}
-
-output "aks_fqdn" {
-  value = module.aks.fqdn
-}
-
-output "aks_private_fqdn" {
-  value = module.aks.private_fqdn
-}
 
 output "aks_outbound_ips" {
   value = azurerm_public_ip.aks_outbound.*.ip_address
+}
+
+output "aks_outbound_temp_ips" {
+  value = azurerm_public_ip.aks_outbound_temp.*.ip_address
 }
 
 ## key vault ##
@@ -48,20 +41,6 @@ output "key_vault_uri" {
 
 output "key_vault_name" {
   value = module.key_vault.name
-}
-
-## Container registry ##
-output "container_registry_login_server" {
-  value = module.acr.login_server
-}
-
-output "container_registry_admin_username" {
-  value = module.acr.admin_username
-}
-
-output "container_registry_admin_password" {
-  value     = module.acr.admin_password
-  sensitive = true
 }
 
 ## Application gateway.
@@ -79,6 +58,14 @@ output "api_fqdn" {
 
 output "reverse_proxy_ip" {
   value = var.reverse_proxy_ip
+}
+
+output "private_dns_name" {
+  value = var.private_dns_name
+}
+
+output "ca_suffix_dns_private_name" {
+  value = var.ca_suffix_dns_private_name
 }
 
 ## CosmosDb - MongoDB ##
@@ -105,21 +92,3 @@ output "cosmosdb_account_mongodb_connection_strings" {
   sensitive = true
 }
 
-## Postgresql server
-output "postgresql_fqdn" {
-  value = module.postgresql.fqdn
-}
-
-output "postgresql_administrator_login" {
-  value     = data.azurerm_key_vault_secret.postgres_administrator_login.value
-  sensitive = true
-}
-
-output "postgresql_administrator_login_password" {
-  value     = data.azurerm_key_vault_secret.postgres_administrator_login_password.value
-  sensitive = true
-}
-
-output "postgresql_replica_fqdn" {
-  value = module.postgresql.replica_fqdn
-}

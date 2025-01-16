@@ -20,6 +20,28 @@ resource "kubernetes_secret" "hub-spid-login-ms" {
   type = "Opaque"
 }
 
+resource "kubernetes_secret" "hub-spid-login-ms-agid" {
+  metadata {
+    name      = "hub-spid-login-ms-agid"
+    namespace = kubernetes_namespace.selc.metadata[0].name
+  }
+
+  data = {
+    APPINSIGHTS_INSTRUMENTATIONKEY = local.appinsights_instrumentation_key
+    JWT_TOKEN_PRIVATE_KEY          = module.key_vault_secrets_query.values["jwt-private-key"].value
+    JWT_TOKEN_KID                  = module.key_vault_secrets_query.values["jwt-kid"].value
+
+    METADATA_PUBLIC_CERT  = module.key_vault_secrets_query.values["agid-login-cert"].value
+    METADATA_PRIVATE_CERT = module.key_vault_secrets_query.values["agid-login-private-key"].value
+
+    USER_REGISTRY_API_KEY = module.key_vault_secrets_query.values["user-registry-api-key"].value
+
+    SPID_LOGS_STORAGE_CONNECTION_STRING = module.key_vault_secrets_query.values["logs-storage-connection-string"].value
+  }
+
+  type = "Opaque"
+}
+
 resource "kubernetes_secret" "selc-redis-credentials" {
   metadata {
     name      = "redis-credentials"
@@ -56,32 +78,7 @@ resource "kubernetes_secret" "mongo-credentials" {
 
   data = {
     MONGODB_CONNECTION_URI       = module.key_vault_secrets_query.values["mongodb-connection-string"].value
-    MONGODB_NAME_SELC_PRODUCT    = local.mongodb_name_selc_product
     MONGODB_NAME_SELC_USER_GROUP = local.mongodb_name_selc_user_group
-  }
-
-  type = "Opaque"
-}
-
-resource "kubernetes_secret" "postgres" {
-  metadata {
-    name      = "postgres"
-    namespace = kubernetes_namespace.selc.metadata[0].name
-  }
-
-  data = {
-    #principal database name
-    POSTGRES_DB = "selc"
-    #principal database hostname or ip
-    POSTGRES_HOST = local.postgres_hostname
-    #principal database hostname or ip
-    POSTGRES_PORT = "5432"
-    #replica database name
-    POSTGRES_REPLICA_DB = "selc"
-    #replica database hostname or ip
-    POSTGRES_REPLICA_HOST = local.postgres_replica_hostname
-    #replica database hostname or ip
-    POSTGRES_REPLICA_PORT = "5432"
   }
 
   type = "Opaque"
@@ -120,10 +117,13 @@ resource "kubernetes_secret" "mail-not-pec" {
   }
 
   data = {
-    MAIL_SERVER_HOST     = "smtp.gmail.com"
-    MAIL_SERVER_PORT     = 587
-    MAIL_SERVER_USERNAME = module.key_vault_secrets_query.values["smtp-not-pec-usr"].value
-    MAIL_SERVER_PASSWORD = module.key_vault_secrets_query.values["smtp-not-pec-psw"].value
+    MAIL_SERVER_HOST          = "smtp.gmail.com"
+    MAIL_SERVER_PORT          = 587
+    MAIL_SERVER_USERNAME      = module.key_vault_secrets_query.values["smtp-not-pec-usr"].value
+    MAIL_SERVER_PASSWORD      = module.key_vault_secrets_query.values["smtp-not-pec-psw"].value
+    AWS_SES_ACCESS_KEY_ID     = module.key_vault_secrets_query.values["aws-ses-access-key-id"].value
+    AWS_SES_SECRET_ACCESS_KEY = module.key_vault_secrets_query.values["aws-ses-secret-access-key"].value
+    AWS_SES_REGION            = "eu-south-1"
   }
 
   type = "Opaque"
@@ -227,20 +227,6 @@ resource "kubernetes_secret" "social-login" {
   type = "Opaque"
 }
 
-resource "kubernetes_secret" "uservice-party-management" {
-  metadata {
-    name      = "uservice-party-management"
-    namespace = kubernetes_namespace.selc.metadata[0].name
-  }
-
-  data = {
-    POSTGRES_USR = format("%s@%s", "PARTY_USER", local.postgres_hostname)
-    POSTGRES_PSW = module.key_vault_secrets_query.values["postgres-party-user-password"].value
-  }
-
-  type = "Opaque"
-}
-
 resource "kubernetes_secret" "common-secrets" {
   metadata {
     name      = "common-secrets"
@@ -249,6 +235,8 @@ resource "kubernetes_secret" "common-secrets" {
 
   data = {
     USERVICE_USER_REGISTRY_API_KEY = module.key_vault_secrets_query.values["user-registry-api-key"].value
+    # can be remove after mmigration of onboarding-backend to container apps
+    USER-REGISTRY-API-KEY = module.key_vault_secrets_query.values["user-registry-api-key"].value
   }
 
   type = "Opaque"
@@ -273,6 +261,7 @@ resource "kubernetes_secret" "event-secrets" {
 
   type = "Opaque"
 }
+
 
 resource "kubernetes_secret" "onboarding-interceptor-event-secrets" {
   metadata {
@@ -438,3 +427,45 @@ resource "kubernetes_secret" "support-secrets" {
   type = "Opaque"
 }
 
+resource "kubernetes_secret" "product-storage" {
+  metadata {
+    name      = "product-storage"
+    namespace = kubernetes_namespace.selc.metadata[0].name
+  }
+
+  data = {
+    BLOB-STORAGE-PRODUCT-CONNECTION-STRING = module.key_vault_secrets_query.values["blob-storage-product-connection-string"].value
+  }
+
+  type = "Opaque"
+}
+
+resource "kubernetes_secret" "secret-tls-selc-internal" {
+  for_each = var.secrets_tls_certificates
+
+  metadata {
+    name      = each.value
+    namespace = kubernetes_namespace.selc.metadata[0].name
+  }
+
+  data = {
+    "tls.crt" = data.azurerm_key_vault_certificate_data.values[each.value].pem
+    "tls.key" = data.azurerm_key_vault_certificate_data.values[each.value].key
+  }
+
+  type = "kubernetes.io/tls"
+}
+
+resource "kubernetes_secret" "anac-ftp-secret" {
+  metadata {
+    name      = "anac-ftp-secret"
+    namespace = kubernetes_namespace.selc.metadata[0].name
+  }
+
+  data = {
+    ANAC_FTP_PASSWORD   = module.key_vault_secrets_query.values["anac-ftp-password"].value
+    ANAC_FTP_KNOWN_HOST = module.key_vault_secrets_query.values["anac-ftp-known-host"].value
+  }
+
+  type = "Opaque"
+}

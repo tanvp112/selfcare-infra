@@ -1,3 +1,8 @@
+data "azurerm_api_management" "apim" {
+  name                = format("%s-apim-v2", local.project)
+  resource_group_name = format("%s-api-v2-rg", local.project)
+}
+
 resource "azurerm_resource_group" "sec_rg" {
   name     = "${local.project}-sec-rg"
   location = var.location
@@ -6,25 +11,13 @@ resource "azurerm_resource_group" "sec_rg" {
 }
 
 module "key_vault" {
-  source              = "git::https://github.com/pagopa/terraform-azurerm-v3.git//key_vault?ref=v7.3.0"
+  source              = "github.com/pagopa/terraform-azurerm-v3.git//key_vault?ref=v7.50.1"
   name                = "${local.project}-kv"
   location            = azurerm_resource_group.sec_rg.location
   resource_group_name = azurerm_resource_group.sec_rg.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
 
   tags = var.tags
-}
-
-# ## api management policy ##
-resource "azurerm_key_vault_access_policy" "api_management_policy" {
-  key_vault_id = module.key_vault.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = module.apim.principal_id
-
-  key_permissions         = []
-  secret_permissions      = ["Get", "List"]
-  certificate_permissions = ["Get", "List"]
-  storage_permissions     = []
 }
 
 ## user assined identity: (application gateway) ##
@@ -54,7 +47,7 @@ resource "azurerm_key_vault_access_policy" "adgroup_admin_policy" {
   object_id = data.azuread_group.adgroup_admin.object_id
 
   key_permissions         = ["Get", "List", "Update", "Create", "Import", "Delete", ]
-  secret_permissions      = ["Get", "List", "Set", "Delete", ]
+  secret_permissions      = ["Get", "List", "Set", "Delete", "Recover", "Backup", "Restore"]
   storage_permissions     = []
   certificate_permissions = ["Get", "List", "Update", "Create", "Import", "Delete", "Restore", "Purge", "Recover", ]
 }
@@ -154,4 +147,3 @@ resource "azurerm_user_assigned_identity" "appgateway" {
 
   tags = var.tags
 }
-

@@ -16,10 +16,11 @@ module "key_vault_secrets_query" {
     "jwt-exchange-private-key",
     "jwt-exchange-public-key",
     "jwt-exchange-kid",
+    "agid-login-cert",
+    "agid-login-private-key",
     "agid-spid-cert",
     "agid-spid-private-key",
     "mongodb-connection-string",
-    "postgres-party-user-password",
     "smtp-usr",
     "smtp-psw",
     "smtp-not-pec-usr",
@@ -61,7 +62,9 @@ module "key_vault_secrets_query" {
     "zendesk-support-api-key",
     "prod-fd-client-id",
     "prod-fd-client-secret",
-    "prod-fd-grant-type"
-
+    "prod-fd-grant-type",
+    "anac-ftp-password",
+    "anac-ftp-known-host",
+    "blob-storage-product-connection-string"
   ]
 }

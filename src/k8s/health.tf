@@ -1,7 +1,7 @@
 resource "kubernetes_deployment" "health" {
   metadata {
     name      = "health"
-    namespace = kubernetes_namespace.health.metadata[0].name
+    namespace = kubernetes_namespace.selc.metadata[0].name
     labels = {
       app = "health"
     }
@@ -25,7 +25,7 @@ resource "kubernetes_deployment" "health" {
 
       spec {
         container {
-          image = "nginx:1.21.4"
+          image = "nginx:1.21.4@sha256:366e9f1ddebdb844044c2fafd13b75271a9f620819370f8971220c2b330a9254"
           name  = "health"
           liveness_probe {
             http_get {
@@ -44,7 +44,7 @@ resource "kubernetes_deployment" "health" {
 resource "kubernetes_service" "health" {
   metadata {
     name      = "health"
-    namespace = kubernetes_namespace.health.metadata[0].name
+    namespace = kubernetes_namespace.selc.metadata[0].name
     labels = {
       app = "health"
     }

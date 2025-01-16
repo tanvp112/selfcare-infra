@@ -9,9 +9,14 @@ resource "azurerm_public_ip" "appgateway_public_ip" {
   tags                = var.tags
 }
 
+data "azurerm_api_management" "this" {
+  name                = format("%s-apim-v2", local.project)
+  resource_group_name = format("%s-api-v2-rg", local.project)
+}
+
 # Subnet to host the application gateway
 module "appgateway_snet" {
-  source               = "git::https://github.com/pagopa/terraform-azurerm-v3.git//subnet?ref=v7.3.0"
+  source               = "github.com/pagopa/terraform-azurerm-v3.git//subnet?ref=v7.50.1"
   name                 = "${local.project}-appgateway-snet"
   address_prefixes     = var.cidr_subnet_appgateway
   resource_group_name  = azurerm_resource_group.rg_vnet.name
@@ -24,31 +29,31 @@ module "appgateway_snet" {
 locals {
   allowedIngressPathRegexps = [
     "/spid/*",
+    "/spid-login/*",
     "/dashboard/*",
-    "/onboarding/*",
+    "^/imprese/onboarding/v\\d+/.*$",
+    "^/onboarding/v\\d+/.*$",
     "/ms-notification-manager/*",
-    # "/party-process/*",
     "/party-registry-proxy/*",
-    # "/ms-core/*",
   ]
 
   backends = {
     aks = {
-      protocol                    = "Http"
-      host                        = trim(azurerm_dns_a_record.dns_a_api.fqdn, ".")
-      port                        = 80
-      ip_addresses                = [var.reverse_proxy_ip]
+      protocol                    = "Https"
+      host                        = "selc.internal.${var.dns_zone_prefix}.${var.external_domain}"
+      port                        = 443
+      ip_addresses                = null
       probe                       = "/health"
       probe_name                  = "probe-aks"
       request_timeout             = 60
-      fqdns                       = null
+      fqdns                       = ["selc.internal.${var.dns_zone_prefix}.${var.external_domain}"]
       pick_host_name_from_backend = false
     }
     apim = {
       protocol                    = "Https"
       host                        = trim(azurerm_dns_a_record.dns_a_api.fqdn, ".")
       port                        = 443
-      ip_addresses                = module.apim.private_ip_addresses
+      ip_addresses                = data.azurerm_api_management.this.private_ip_addresses
       probe                       = "/external/status"
       probe_name                  = "probe-apim"
       request_timeout             = 60
@@ -64,6 +69,28 @@ locals {
       probe_name                  = "probe-platform-aks"
       request_timeout             = 60
       fqdns                       = ["${var.aks_platform_env}.pnpg.internal.${var.dns_zone_prefix}.${var.external_domain}"]
+      pick_host_name_from_backend = false
+    }
+    hub-spid-selc = {
+      protocol                    = "Https"
+      host                        = "selc-${var.env_short}-hub-spid-login-ca.${var.ca_suffix_dns_private_name}"
+      port                        = 443
+      ip_addresses                = null
+      probe                       = "/info"
+      probe_name                  = "probe-hub-spid-selc"
+      request_timeout             = 60
+      fqdns                       = ["selc-${var.env_short}-hub-spid-login-ca.${var.ca_suffix_dns_private_name}"]
+      pick_host_name_from_backend = false
+    }
+    hub-spid-pnpg = {
+      protocol                    = "Https"
+      host                        = "selc-${var.env_short}-pnpg-hub-spid-login-ca.${var.ca_pnpg_suffix_dns_private_name}"
+      port                        = 443
+      ip_addresses                = null
+      probe                       = "/info"
+      probe_name                  = "probe-hub-spid-pnpg"
+      request_timeout             = 60
+      fqdns                       = ["selc-${var.env_short}-pnpg-hub-spid-login-ca.${var.ca_pnpg_suffix_dns_private_name}"]
       pick_host_name_from_backend = false
     }
   }
@@ -105,7 +132,7 @@ locals {
 
 # Application gateway: Multilistener configuraiton
 module "app_gw" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//app_gateway?ref=v7.3.0"
+  source = "github.com/pagopa/terraform-azurerm-v3.git//app_gateway?ref=v7.50.1"
 
   resource_group_name = azurerm_resource_group.rg_vnet.name
   location            = azurerm_resource_group.rg_vnet.location
@@ -129,14 +156,7 @@ module "app_gw" {
   listeners = local.listeners
 
   # maps listener to backend
-  routes = {
-    api-pnpg-to-platform-aks = {
-      listener              = "api-pnpg"
-      backend               = "platform-aks"
-      rewrite_rule_set_name = null
-      priority              = 20
-    }
-  }
+  routes = {}
 
   routes_path_based = {
     api = {
@@ -144,6 +164,12 @@ module "app_gw" {
       priority     = null
       url_map_name = "api"
       priority     = 10
+    }
+    api-pnpg = {
+      listener     = "api-pnpg"
+      priority     = null
+      url_map_name = "api-pnpg"
+      priority     = 20
     }
   }
 
@@ -156,6 +182,32 @@ module "app_gw" {
           paths                 = ["/external/*"]
           backend               = "apim"
           rewrite_rule_set_name = null
+        }
+        bff_api = {
+          paths                 = ["/dashboard/*", "/onboarding/*", "/party-registry-proxy/*"]
+          backend               = "apim"
+          rewrite_rule_set_name = null
+        }
+        hub_spid_selc = {
+          paths                 = ["${var.spid_selc_path_prefix}/*"]
+          backend               = "hub-spid-selc"
+          rewrite_rule_set_name = "rewrite-rule-set-hub-spid-selc"
+        }
+      }
+    }
+    api-pnpg = {
+      default_backend               = "platform-aks"
+      default_rewrite_rule_set_name = "rewrite-rule-set-api"
+      path_rule = {
+        bff_pnpg_api = {
+          paths                 = ["/imprese/dashboard/*", "/imprese/onboarding/*", "/external/*"]
+          backend               = "apim"
+          rewrite_rule_set_name = null
+        }
+        hub_spid_pnpg = {
+          paths                 = ["${var.spid_pnpg_path_prefix}/*"]
+          backend               = "hub-spid-pnpg"
+          rewrite_rule_set_name = "rewrite-rule-set-hub-spid-pnpg"
         }
       }
     }
@@ -218,6 +270,52 @@ module "app_gw" {
         },
       ]
     },
+    {
+      name = "rewrite-rule-set-hub-spid-selc"
+      rewrite_rules = [
+        {
+          name          = "remove-spid-path"
+          rule_sequence = 1
+          conditions = [{
+            ignore_case = true
+            negate      = false
+            pattern     = "${var.spid_selc_path_prefix}/(.*)"
+            variable    = "var_uri_path"
+          }]
+          request_header_configurations  = []
+          response_header_configurations = []
+          ## set path only on azure portal
+          url = {
+            path         = "{var_uri_path_1}"
+            query_string = ""
+            components   = "path_only"
+          }
+        }
+      ]
+    },
+    {
+      name = "rewrite-rule-set-hub-spid-pnpg"
+      rewrite_rules = [
+        {
+          name          = "remove-spid-path"
+          rule_sequence = 1
+          conditions = [{
+            ignore_case = true
+            negate      = false
+            pattern     = "${var.spid_pnpg_path_prefix}/(.*)"
+            variable    = "var_uri_path"
+          }]
+          request_header_configurations  = []
+          response_header_configurations = []
+          ## set path only on azure portal
+          url = {
+            path         = "{var_uri_path_1}"
+            query_string = ""
+            components   = "path_only"
+          }
+        }
+      ]
+    }
   ]
 
   # TLS
@@ -229,7 +327,12 @@ module "app_gw" {
 
   alerts_enabled = var.app_gateway_alerts_enabled
 
-  action = [
+  action = var.env_short == "x" ? [
+    {
+      action_group_id    = azurerm_monitor_action_group.error_action_group[0].id
+      webhook_properties = null
+    }
+    ] : [
     {
       action_group_id    = azurerm_monitor_action_group.slack.id
       webhook_properties = null
@@ -258,8 +361,8 @@ module "app_gw" {
           metric_name              = "ComputeUnits"
           operator                 = "GreaterOrLessThan"
           alert_sensitivity        = "High"
-          evaluation_total_count   = 2
-          evaluation_failure_count = 2
+          evaluation_total_count   = 4
+          evaluation_failure_count = 4
           dimension                = []
         }
       ]

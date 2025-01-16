@@ -2,24 +2,24 @@ locals {
   product = "${var.prefix}-${var.env_short}"
   project = "${var.prefix}-${var.env_short}-${var.location_short}-${var.domain}"
 
+  app_name_fn = "${local.product}-pnpg-onboarding-fn"
+
   key_vault_name           = "${local.product}-${var.domain}-kv"
   key_vault_resource_group = "${local.product}-${var.domain}-sec-rg"
 
   redis_url = "selc-${var.env_short}-${var.location_short}-pnpg-redis.redis.cache.windows.net"
 
-  # postgres_hostname               = "${format("%s-postgresql", local.project)}.postgres.database.azure.com"
-  # postgres_replica_hostname       = var.enable_postgres_replica ? "${format("%s-postgresql-rep", local.project)}.postgres.database.azure.com" : local.postgres_hostname
   mongodb_name_selc_core          = "selcMsCore"
-  mongodb_name_selc_product       = "selcProduct"
   mongodb_name_selc_user_group    = "selcUserGroup"
   contracts_storage_account_name  = replace("${local.project}-contracts-storage", "-", "")
   contracts_storage_container     = "${local.project}-contracts-blob"
   appinsights_instrumentation_key = data.azurerm_application_insights.application_insights.instrumentation_key
 
-  monitor_appinsights_name        = "${local.product}-appinsights"
-  monitor_action_group_slack_name = "SlackPagoPA"
-  monitor_action_group_email_name = "PagoPA"
-  alert_action_group_domain_name  = "${var.prefix}${var.env_short}${var.domain}"
+  monitor_appinsights_name           = "${local.product}-appinsights"
+  monitor_action_group_slack_name    = "SlackPagoPA"
+  monitor_action_group_email_name    = "PagoPA"
+  monitor_action_group_opsgenie_name = "Opsgenie"
+  alert_action_group_domain_name     = "${var.prefix}${var.env_short}${var.domain}"
 
   ingress_hostname_prefix               = "${var.instance}.${var.domain}"
   internal_dns_zone_name                = "${var.dns_zone_internal_prefix}.${var.external_domain}"
@@ -53,7 +53,8 @@ locals {
 
 
   # Monitor
-  alert_pnpg_error_5xx_name = "pnpg-error-5xx"
+  alert_functions_exceptions_name       = "pnpg-functions-exception"
+  alert_functions_exceptions_role_names = ["selc-${var.env_short}-pnpg-onboarding-fn"]
 }
 
 variable "prefix" {
@@ -166,6 +167,11 @@ variable "ingress_load_balancer_hostname" {
   type = string
 }
 
+variable "ca_suffix_dns_private_name" {
+  type        = string
+  description = "CA suffix private DNS record"
+}
+
 variable "reverse_proxy_ip" {
   type        = string
   default     = "127.0.0.1"
@@ -184,6 +190,7 @@ variable "dns_zone_prefix" {
   default     = "selfcare"
   description = "The dns subdomain."
 }
+
 
 variable "dns_zone_internal_prefix" {
   type        = string
@@ -245,6 +252,10 @@ variable "aruba_sign_service" {
 }
 
 variable "geo-taxonomies" {
+  type = map(string)
+}
+
+variable "anac-ftp" {
   type = map(string)
 }
 

@@ -28,6 +28,7 @@ aks_resource_group_name = "selc-d-weu-dev01-aks-rg"
 
 ingress_load_balancer_ip       = "10.11.100.250"
 ingress_load_balancer_hostname = "dev01.pnpg.internal.dev.selfcare.pagopa.it"
+ca_suffix_dns_private_name     = "victoriousfield-e39534b8.westeurope.azurecontainerapps.io"
 reverse_proxy_be_io            = "10.1.0.250"
 # This is the k8s ingress controller ip. It must be in the aks subnet range.
 reverse_proxy_ip = "10.11.100.250"
@@ -56,11 +57,6 @@ api_gateway_url = "https://api-pnpg.dev.selfcare.pagopa.it"
 # cdn_frontend_url = "https://dev.selfcare.pagopa.it"
 # cdn_storage_url  = "https://selcdcheckoutsa.z6.web.core.windows.net"
 spid_testenv_url = "https://selc-d-pnpg-spid-testenv.westeurope.azurecontainer.io"
-
-# uservice versions
-api-version_uservice-party-management     = "0.1"
-api-version_uservice-party-process        = "0.1"
-api-version_uservice-party-registry-proxy = "v1"
 
 # jwt exchange duration
 jwt_token_exchange_duration = "PT15M"
@@ -126,6 +122,12 @@ aruba_sign_service = {
 
 geo-taxonomies = {
   GEO_TAXONOMIES_URL = "https://api-pnpg.dev.selfcare.pagopa.it/external"
+}
+
+anac-ftp = {
+  ANAC_FTP_IP        = "93.43.119.85"
+  ANAC_FTP_USER      = "PagoPA_user"
+  ANAC_FTP_DIRECTORY = "/mnt/RegistroGestoriPiattaforme/Collaudo/"
 }
 
 

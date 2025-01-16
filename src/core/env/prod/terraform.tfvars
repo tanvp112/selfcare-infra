@@ -27,13 +27,16 @@ cidr_subnet_redis                 = ["10.1.132.0/24"]
 cidr_subnet_vpn                   = ["10.1.133.0/24"]
 cidr_subnet_dns_forwarder         = ["10.1.134.0/29"]
 cidr_subnet_cosmosdb_mongodb      = ["10.1.135.0/24"]
-cidr_subnet_apim                  = ["10.1.136.0/24"]
 cidr_subnet_contract_storage      = ["10.1.137.0/24"]
 cidr_subnet_eventhub              = ["10.1.138.0/24"]
 cidr_subnet_logs_storage          = ["10.1.139.0/24"]
 cidr_subnet_private_endpoints     = ["10.1.140.0/24"]
 cidr_subnet_pnpg_cosmosdb_mongodb = ["10.1.141.0/24"] #this is a place holder for pnpg mongo
 cidr_subnet_load_tests            = ["10.1.142.0/29"]
+cidr_subnet_eventhub_rds          = ["10.1.153.0/26"]
+
+cidr_subnet_selc      = ["10.1.148.0/23"]
+cidr_subnet_selc_pnpg = ["10.1.150.0/23"]
 
 #
 # Pair VNET
@@ -53,8 +56,9 @@ vnet_aks_ddos_protection_plan = true
 cidr_aks_platform_vnet        = ["10.11.0.0/16"]
 
 # dns
-dns_zone_prefix = "selfcare"
-external_domain = "pagopa.it"
+dns_zone_prefix    = "selfcare"
+dns_zone_prefix_ar = "areariservata"
+external_domain    = "pagopa.it"
 
 # storage account
 public_network_access_enabled = false
@@ -65,16 +69,12 @@ enable_azdoa                 = true
 enable_iac_pipeline          = true
 enable_app_projects_pipeline = false
 
-# apim
-apim_publisher_name = "pagoPA SelfCare PROD"
-apim_sku            = "Premium_1" # TODO
-
 # app_gateway
 app_gateway_api_certificate_name      = "api-selfcare-pagopa-it"
 app_gateway_api_pnpg_certificate_name = "api-pnpg-selfcare-pagopa-it"
 
-app_gateway_min_capacity   = 0 # todo change to at least 1
-app_gateway_max_capacity   = 2
+app_gateway_min_capacity   = 1
+app_gateway_max_capacity   = 5
 app_gateway_sku_name       = "WAF_v2"
 app_gateway_sku_tier       = "WAF_v2"
 app_gateway_alerts_enabled = true
@@ -89,15 +89,30 @@ redis_version  = 6
 # aks
 # This is the k8s ingress controller ip. It must be in the aks subnet range.
 reverse_proxy_ip                  = "10.1.1.250"
-aks_kubernetes_version            = "1.23.12"
+private_dns_name                  = "selc.internal.selfcare.pagopa.it"
+ca_suffix_dns_private_name        = "lemonpond-bb0b750e.westeurope.azurecontainerapps.io"
+ca_pnpg_suffix_dns_private_name   = "calmmoss-0be48755.westeurope.azurecontainerapps.io"
+spid_selc_path_prefix             = "/spid-login/v1"
+private_onboarding_dns_name       = "selc-p-onboarding-ms-ca.lemonpond-bb0b750e.westeurope.azurecontainerapps.io"
+aks_kubernetes_version            = "1.27.7"
 aks_system_node_pool_os_disk_type = "Ephemeral"
 aks_upgrade_settings_max_surge    = "33%"
 aks_sku_tier                      = "Standard"
 
 aks_system_node_pool_vm_size                      = "Standard_D4ds_v5"
-aks_system_node_pool_node_count_min               = 3
+aks_system_node_pool_node_count_min               = 2
 aks_system_node_pool_node_count_max               = 3
-aks_system_node_pool_only_critical_addons_enabled = false
+aks_system_node_pool_only_critical_addons_enabled = true
+system_node_pool_enable_host_encryption           = true
+
+aks_user_node_pool_enabled        = true
+aks_user_node_pool_vm_size        = "Standard_D4ds_v5"
+aks_user_node_pool_os_disk_type   = "Ephemeral"
+aks_user_node_pool_node_count_min = 3
+aks_user_node_pool_node_count_max = 5
+user_node_pool_node_labels = {
+  "node_type" = "user"
+}
 
 #
 # Docker
@@ -129,23 +144,6 @@ cosmosdb_mongodb_additional_geo_locations = [{
   zone_redundant    = false
 }]
 
-#postgres
-postgres_sku_name                     = "GP_Gen5_2"
-postgres_geo_redundant_backup_enabled = true
-postgres_enable_replica               = false
-postgres_configuration = {
-  autovacuum_work_mem         = "-1"
-  effective_cache_size        = "5242880"
-  log_autovacuum_min_duration = "5000"
-  log_connections             = "off"
-  log_line_prefix             = "%t [%p apps:%a host:%r]: [%l-1] db=%d,user=%u"
-  log_temp_files              = "4096"
-  maintenance_work_mem        = "524288"
-  max_wal_size                = "4096"
-  log_connections             = "on"
-  log_checkpoints             = "on"
-  connection_throttling       = "on"
-}
 
 # contracts storage
 contracts_account_replication_type   = "RAGZRS"
@@ -286,14 +284,83 @@ eventhub_ip_rules = [
   { //PROD-INTEROP-PROD
     ip_mask = "18.192.110.102",
     action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "18.193.152.144",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "52.29.238.249",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "18.153.188.40",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "18.102.243.53",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "18.102.237.186",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "15.161.78.171",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "35.152.114.229",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-PROD
+    ip_mask = "18.102.126.92",
+    action  = "Allow"
+    }, { //PROD-INTEROP-PROD
+    ip_mask = "18.102.141.181",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-ATST
+    ip_mask = "15.161.194.50",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-ATST
+    ip_mask = "18.102.169.250",
+    action  = "Allow"
+  },
+  { //PROD-INTEROP-ATST
+    ip_mask = "35.152.133.54",
+    action  = "Allow"
+  },
+  { //PROD-FD
+    ip_mask = "193.203.230.20",
+    action  = "Allow"
+  },
+  { // KONECTA
+    ip_mask = "185.170.36.80",
+    action  = "Allow"
+  },
+  { //PROD-SMA
+    ip_mask = "10.20.7.0/27",
+    action  = "Allow"
   }
 ]
+
+eventhub_rds_vm = {
+  size = "Standard_B1ms"
+  allowed_ipaddresses = [
+    "193.203.230.20/32", # Nexi FD
+  ]
+}
 
 eventhubs = [{
   name              = "SC-Contracts"
   partitions        = 30
   message_retention = 7
   consumers         = []
+  iam_roles = {
+    "ee71d0ec-0023-44ae-93dd-871d25ab7003" = "Azure Event Hubs Data Receiver" # io-p-sign-backoffice-func
+  }
   keys = [
     {
       name   = "selfcare-wo"
@@ -339,6 +406,18 @@ eventhubs = [{
     },
     {
       name   = "interop"
+      listen = true
+      send   = false
+      manage = false
+    },
+    {
+      name   = "sma"
+      listen = true
+      send   = false
+      manage = false
+    },
+    {
+      name   = "conservazione"
       listen = true
       send   = false
       manage = false
@@ -398,13 +477,40 @@ eventhubs = [{
       listen = true
       send   = false
       manage = false
-      }, {
+    },
+    {
       name   = "external-interceptor"
+      listen = true
+      send   = false
+      manage = false
+    },
+    {
+      name   = "sma"
       listen = true
       send   = false
       manage = false
     }
   ]
+  },
+  {
+    name              = "SC-UserGroups"
+    partitions        = 10
+    message_retention = 7
+    consumers         = ["io-cms-sync"]
+    keys = [
+      {
+        name   = "selfcare-wo"
+        listen = false
+        send   = true
+        manage = false
+      },
+      {
+        name   = "io"
+        listen = true
+        send   = false
+        manage = false
+      }
+    ]
 }]
 ##
 
@@ -417,3 +523,6 @@ logs_advanced_threat_protection = true
 enable_load_tests_db = false
 
 checkout_advanced_threat_protection_enabled = true
+
+cae_zone_redundant      = true
+cae_zone_redundant_pnpg = true

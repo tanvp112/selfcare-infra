@@ -48,7 +48,7 @@ locals {
 // public storage used to serve FE
 #tfsec:ignore:azure-storage-default-action-deny
 module "checkout_cdn" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//cdn?ref=v7.3.0"
+  source = "github.com/pagopa/terraform-azurerm-v3.git//cdn?ref=v7.50.1"
 
   name                  = "checkout"
   prefix                = local.project
@@ -105,6 +105,11 @@ module "checkout_cdn" {
         action = "Append"
         name   = "X-Content-Type-Options"
         value  = "nosniff"
+      },
+      {
+        action = "Append"
+        name   = "Content-Security-Policy"
+        value  = format("frame-ancestors 'none'; object-src 'none'; frame-src 'self' *.%s.%s;", var.dns_zone_prefix, var.external_domain)
       }
     ]
   }

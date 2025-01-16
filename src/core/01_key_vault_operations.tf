@@ -1,6 +1,6 @@
 # JWT
 module "jwt" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//jwt_keys?ref=jwt_cert_allowed_uses_as_variable"
+  source = "github.com/pagopa/terraform-azurerm-v3.git//jwt_keys?ref=jwt_cert_allowed_uses_as_variable"
 
   jwt_name            = "jwt"
   key_vault_id        = module.key_vault.id
@@ -12,7 +12,7 @@ module "jwt" {
 }
 
 module "jwt_exchange" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//jwt_keys?ref=jwt_cert_allowed_uses_as_variable"
+  source = "github.com/pagopa/terraform-azurerm-v3.git//jwt_keys?ref=jwt_cert_allowed_uses_as_variable"
 
   jwt_name            = "jwt-exchange"
   key_vault_id        = module.key_vault.id
@@ -23,16 +23,39 @@ module "jwt_exchange" {
   cert_allowed_uses   = ["crl_signing", "data_encipherment", "digital_signature", "key_agreement", "cert_signing", "key_encipherment"]
 }
 
-module "agid_spid" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//jwt_keys?ref=jwt_cert_allowed_uses_as_variable"
+# module "agid_spid" {
+#   count = var.env_short == "p" ? 0 : 1
 
-  jwt_name          = "agid-spid"
-  key_vault_id      = module.key_vault.id
-  cert_common_name  = "selfcare.pagopa.it"
-  cert_password     = ""
-  tags              = var.tags
-  cert_allowed_uses = ["digital_signature"]
-}
+#   source = "github.com/pagopa/terraform-azurerm-v3.git//jwt_keys?ref=jwt_cert_allowed_uses_as_variable"
+
+#   jwt_name          = "agid-spid"
+#   key_vault_id      = module.key_vault.id
+#   cert_common_name  = "selfcare.pagopa.it"
+#   cert_password     = ""
+#   tags              = var.tags
+#   cert_allowed_uses = ["digital_signature"]
+# }
+
+# New certificate used for update agid metadata creating new endpoint
+# module "agid_login" {
+#   count = var.env_short == "p" ? 0 : 1
+
+#   source = "github.com/pagopa/terraform-azurerm-v3.git//jwt_keys?ref=jwt_cert_allowed_uses_as_variable"
+
+#   jwt_name                 = "agid-login"
+#   key_vault_id             = module.key_vault.id
+#   cert_common_name         = "selfcare.pagopa.it"
+#   cert_password            = ""
+#   cert_country             = "IT"
+#   cert_locality            = "Roma"
+#   cert_organization        = "PagoPA"
+#   cert_organizational_unit = "PagoPA"
+#   cert_province            = "RM"
+#   cert_postal_code         = "00187"
+#   cert_validity_hours      = 87600
+#   tags                     = var.tags
+#   cert_allowed_uses        = []
+# }
 
 resource "null_resource" "upload_jwks" {
   triggers = {
@@ -69,17 +92,4 @@ resource "null_resource" "upload_jwks" {
                 --no-wait
           EOT
   }
-}
-
-resource "pkcs12_from_pem" "jwt_pkcs12" {
-  password        = ""
-  cert_pem        = module.jwt.certificate_data_pem
-  private_key_pem = module.jwt.jwt_private_key_pem
-}
-
-resource "azurerm_api_management_certificate" "jwt_certificate" {
-  name                = "jwt-spid-crt"
-  api_management_name = module.apim.name
-  resource_group_name = azurerm_resource_group.rg_api.name
-  data                = pkcs12_from_pem.jwt_pkcs12.result
 }

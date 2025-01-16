@@ -50,6 +50,7 @@ resource "kubernetes_ingress_v1" "selc_ingress" {
 
   spec {
     rule {
+      host = var.ingress_health.host
       http {
 
         path {
@@ -64,7 +65,23 @@ resource "kubernetes_ingress_v1" "selc_ingress" {
           path = "/spid/v1/(.*)"
         }
 
+        path {
+          backend {
+            service {
+              name = "hub-spid-login-ms-agid"
+              port {
+                number = var.default_service_port
+              }
+            }
+          }
+          path = "/spid-login/v1/(.*)"
+        }
+
       }
+    }
+    tls {
+      hosts       = [var.ingress_health.host]
+      secret_name = var.ingress_health.secret_name
     }
   }
 }
